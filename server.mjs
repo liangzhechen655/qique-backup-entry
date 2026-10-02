@@ -5,7 +5,7 @@ import {resolve} from 'node:path';
 // Every request is pinned to this user's public game. This is not an open proxy.
 export const GAME_ORIGIN='https://qique-friends-20261001.zheliang655.chatgpt.site';
 const requestHeaders=['accept','accept-language','user-agent','content-type','x-player-token','if-none-match','if-modified-since','range','rsc','next-router-state-tree','next-router-prefetch','next-url'];
-const responseHeaders=['content-type','cache-control','etag','last-modified','vary','accept-ranges','content-range','content-disposition','x-content-type-options'];
+const responseHeaders=['content-type','cache-control','etag','last-modified','vary','accept-ranges','content-range','content-disposition','x-content-type-options','content-security-policy','referrer-policy','permissions-policy','x-frame-options'];
 const limit=16*1024;
 
 function json(response,status,body){response.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store'});response.end(JSON.stringify(body));}

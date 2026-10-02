@@ -28,3 +28,11 @@ node server.mjs
 部署成功并不等于已验证中国大陆直连。需在国内手机关闭 VPN 后检查：能加载页面和手牌、能加入四人房间、能连续摸牌出牌、能播放语音。分别使用手机移动网络与 Wi-Fi 测试，才能确认这条备用入口是否适用。
 
 当前准备阶段不改变原站的访问权限和部署。备用入口依赖原站正常运行；如果免费备用服务器暂时休眠或不可达，仍可使用原网址。
+
+## 临时互联网测试入口
+
+`start-temporary.ps1` 用 Cloudflare Quick Tunnel 给本地备用程序创建临时 HTTPS 网址。先将 Cloudflare 官方 Windows 64 位 `cloudflared.exe` 下载到 `.runtime`，再运行此脚本。它在后台启动程序，不添加开机启动项，不改变 VPN、DNS 或防火墙设置。运行 `stop-temporary.ps1` 可停止本次入口。
+
+这不是长期云服务器：本机需要保持开机、联网，并能访问原站。关闭本机或停止隧道后链接失效，每次重新启动隧道的网址可能不同。国内直连仍需实际测试。
+
+官方说明：https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/
