@@ -8,7 +8,8 @@ $runningFile = Join-Path $runtimeDir 'running.json'
 if (Test-Path -LiteralPath $runningFile) {
   $running = Get-Content -LiteralPath $runningFile -Raw | ConvertFrom-Json
   $active = Get-Process -Id $running.tunnelPid -ErrorAction SilentlyContinue
-  if ($active -and $active.StartTime.ToUniversalTime().ToString('o') -eq $running.tunnelStarted) { Write-Output $running.url; exit 0 }
+  $activeGateway = Get-Process -Id $running.gatewayPid -ErrorAction SilentlyContinue
+  if ($active -and $activeGateway -and $active.StartTime.ToUniversalTime().Ticks -eq ([datetime]$running.tunnelStarted).ToUniversalTime().Ticks -and $activeGateway.StartTime.ToUniversalTime().Ticks -eq ([datetime]$running.gatewayStarted).ToUniversalTime().Ticks) { Write-Output $running.url; exit 0 }
 }
 $nodeBinary = (Get-Command node).Source
 $gateway = Start-Process -FilePath $nodeBinary -ArgumentList 'server.mjs' -WorkingDirectory $taskRoot -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $runtimeDir 'gateway.stdout.log') -RedirectStandardError (Join-Path $runtimeDir 'gateway.stderr.log')

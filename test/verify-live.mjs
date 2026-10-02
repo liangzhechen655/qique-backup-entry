@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict';
 import {GAME_ORIGIN} from '../server.mjs';
+import http from 'node:http';
+import https from 'node:https';
 const base=process.argv[2]||'http://127.0.0.1:8080';
-async function request(origin,path,body,token){const r=await fetch(origin+path,{method:body?'POST':'GET',headers:{...(body?{'content-type':'application/json',origin:new URL(origin).origin}:{}),...(token?{'x-player-token':token}:{})},body:body?JSON.stringify(body):undefined});const data=await r.json();return {status:r.status,...data};}
+async function request(origin,path,body,token){
+  const url=new URL(path,origin),payload=body?JSON.stringify(body):undefined;
+  return new Promise((resolve,reject)=>{
+    const req=(url.protocol==='https:'?https:http).request(url,{agent:false,method:body?'POST':'GET',headers:{...(payload?{'content-type':'application/json',origin:url.origin,'content-length':Buffer.byteLength(payload)}:{}),...(token?{'x-player-token':token}:{})}},res=>{const chunks=[];res.on('data',chunk=>chunks.push(chunk));res.on('error',reject);res.on('end',()=>{try{resolve({status:res.statusCode,...JSON.parse(Buffer.concat(chunks).toString())});}catch(e){reject(e);}});});
+    req.on('error',error=>reject(new Error(`${body?'POST':'GET'} ${url.pathname} failed`,{cause:error})));req.setTimeout(20000,()=>req.destroy(new Error('Network timeout')));req.end(payload);
+  });
+}
 const page=await fetch(base+'/');assert.equal(page.status,200);assert((await page.text()).includes('七雀'));
 const host=await request(base,'/api/rooms',{name:'备用测试甲'});assert.equal(host.status,201);const path='/api/rooms/'+host.room.code;
 const peers=await Promise.all(['备用测试乙','备用测试丙','备用测试丁'].map(name=>request(base,path,{type:'join',name})));peers.forEach(p=>assert.equal(p.status,200));
@@ -21,8 +29,8 @@ view=await request(base,path,null,next.token);const draw=await request(base,path
 const own=draw.room.players.find(p=>p.id===draw.room.meId);assert.equal((await request(base,path,{type:'discard',card:own.hand[0],revision:draw.room.revision},next.token)).status,200);
 const voice=await fetch(base+'/voices/t14.wav');assert.equal(voice.status,200);const bytes=Buffer.from(await voice.arrayBuffer());assert.equal(bytes.toString('ascii',0,4),'RIFF');assert(bytes.length>10000);
 }finally{
-  const final=await request(base,path,null,host.token);
-  if(final.status===200&&final.room.status==='playing')assert.equal((await request(base,path,{type:'end',revision:final.room.revision},host.token)).status,200);
-  for(const c of clients){const current=await request(base,path,null,c.token);if(current.status===200)assert.equal((await request(base,path,{type:'leave',revision:current.room.revision},c.token)).status,200);}
+  const final=await request(GAME_ORIGIN,path,null,host.token);
+  if(final.status===200&&final.room.status==='playing')assert.equal((await request(GAME_ORIGIN,path,{type:'end',revision:final.room.revision},host.token)).status,200);
+  for(const c of clients){const current=await request(GAME_ORIGIN,path,null,c.token);if(current.status===200)assert.equal((await request(GAME_ORIGIN,path,{type:'leave',revision:current.room.revision},c.token)).status,200);}
 }
 console.log('PASS: live original site through backup entry, four independent zero-rate clients, shared rooms across both origins, hidden hands, readiness, dealing, draw/discard, voice delivery, unchanged chat revision, WAV bytes and clean test-seat exit.');
