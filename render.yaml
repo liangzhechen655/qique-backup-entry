@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: qique-backup-entry
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: node --check server.mjs
+    startCommand: node server.mjs
+    healthCheckPath: /healthz
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: 24.14.1
