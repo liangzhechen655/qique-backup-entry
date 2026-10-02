@@ -24,7 +24,7 @@ $tunnel = Start-Process -FilePath $tunnelBinary -ArgumentList @('tunnel','--url'
 $url = $null
 for ($attempt = 0; $attempt -lt 50; $attempt++) {
   if ($tunnel.HasExited) { $gateway.Kill(); throw '临时入口未建立，请检查 .runtime/tunnel.stderr.log。' }
-  if (Test-Path -LiteralPath $tunnelLog) { $match = [regex]::Match((Get-Content -LiteralPath $tunnelLog -Raw),'https://[a-z0-9-]+\.trycloudflare\.com'); if ($match.Success) { $url = $match.Value; break } }
+  if (Test-Path -LiteralPath $tunnelLog) { $logText = [string](Get-Content -LiteralPath $tunnelLog -Raw); $match = [regex]::Match($logText,'https://[a-z0-9-]+\.trycloudflare\.com'); if ($match.Success) { $url = $match.Value; break } }
   Start-Sleep -Milliseconds 500
 }
 if (-not $url) { $tunnel.Kill(); $gateway.Kill(); throw '临时网址生成超时。' }
