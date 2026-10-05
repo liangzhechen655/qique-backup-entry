@@ -3,6 +3,7 @@ import {GAME_ORIGIN} from '../server.mjs';
 import http from 'node:http';
 import https from 'node:https';
 const base=process.argv[2]||'http://127.0.0.1:8080';
+const sharedOrigin=process.argv[3]||GAME_ORIGIN;
 async function request(origin,path,body,token){
   const url=new URL(path,origin),payload=body?JSON.stringify(body):undefined;
   return new Promise((resolve,reject)=>{
@@ -16,7 +17,7 @@ const peers=await Promise.all(['备用测试乙','备用测试丙','备用测试
 const clients=[host,...peers];
 try{
 let view=await request(base,path,null,host.token);
-const original=await request(GAME_ORIGIN,path,null,host.token);assert.equal(original.status,200);assert.equal(original.room.revision,view.room.revision);assert.equal(original.room.money.rateCents,0);
+const original=await request(sharedOrigin,path,null,host.token);assert.equal(original.status,200);assert.equal(original.room.revision,view.room.revision);assert.equal(original.room.money.rateCents,0);
 await Promise.all(clients.map(c=>request(base,path,{type:'ready',ready:true,rateCents:0,revision:view.room.revision},c.token).then(r=>assert.equal(r.status,200))));
 view=await request(base,path,null,host.token);let started=await request(base,path,{type:'start',revision:view.room.revision},host.token);assert.equal(started.status,200);
 let views=await Promise.all(clients.map(c=>request(base,path,null,c.token)));for(const v of views){assert.equal(v.status,200);assert.equal(v.room.money.roundRateCents,0);assert(v.room.players.find(p=>p.id===v.room.meId).hand);assert(v.room.players.filter(p=>p.id!==v.room.meId).every(p=>p.hand===null));}
@@ -29,8 +30,8 @@ view=await request(base,path,null,next.token);const draw=await request(base,path
 const own=draw.room.players.find(p=>p.id===draw.room.meId);assert.equal((await request(base,path,{type:'discard',card:own.hand[0],revision:draw.room.revision},next.token)).status,200);
 const voice=await fetch(base+'/voices/t14.wav');assert.equal(voice.status,200);const bytes=Buffer.from(await voice.arrayBuffer());assert.equal(bytes.toString('ascii',0,4),'RIFF');assert(bytes.length>10000);
 }finally{
-  const final=await request(GAME_ORIGIN,path,null,host.token);
-  if(final.status===200&&final.room.status==='playing')assert.equal((await request(GAME_ORIGIN,path,{type:'end',revision:final.room.revision},host.token)).status,200);
-  for(const c of clients){const current=await request(GAME_ORIGIN,path,null,c.token);if(current.status===200)assert.equal((await request(GAME_ORIGIN,path,{type:'leave',revision:current.room.revision},c.token)).status,200);}
+  const final=await request(sharedOrigin,path,null,host.token);
+  if(final.status===200&&final.room.status==='playing')assert.equal((await request(sharedOrigin,path,{type:'end',revision:final.room.revision},host.token)).status,200);
+  for(const c of clients){const current=await request(sharedOrigin,path,null,c.token);if(current.status===200)assert.equal((await request(sharedOrigin,path,{type:'leave',revision:current.room.revision},c.token)).status,200);}
 }
 console.log('PASS: live original site through backup entry, four independent zero-rate clients, shared rooms across both origins, hidden hands, readiness, dealing, draw/discard, voice delivery, unchanged chat revision, WAV bytes and clean test-seat exit.');

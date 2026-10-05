@@ -4,6 +4,12 @@ import {resolve} from 'node:path';
 
 // Every request is pinned to this user's public game. This is not an open proxy.
 export const GAME_ORIGIN='https://qique-friends-20261001.zheliang655.chatgpt.site';
+export const RENDER_ORIGIN='https://qique-backup-entry.onrender.com';
+export function upstreamSettings(mode='original'){
+  if(mode==='original')return {origin:GAME_ORIGIN,timeoutMs:15000};
+  if(mode==='render')return {origin:RENDER_ORIGIN,timeoutMs:65000};
+  throw Error('QIQUE_UPSTREAM must be original or render');
+}
 const requestHeaders=['accept','accept-language','user-agent','content-type','x-player-token','if-none-match','if-modified-since','range','rsc','next-router-state-tree','next-router-prefetch','next-url'];
 const responseHeaders=['content-type','cache-control','etag','last-modified','vary','accept-ranges','content-range','content-disposition','x-content-type-options','content-security-policy','referrer-policy','permissions-policy','x-frame-options'];
 const limit=16*1024;
@@ -62,6 +68,6 @@ export function createGateway({origin=GAME_ORIGIN,fetchUpstream=fetch,timeoutMs=
 if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){
   const port=Number(process.env.PORT||8080);
   if(!Number.isInteger(port)||port<1||port>65535)throw Error('Invalid PORT');
-  const server=createGateway();server.listen(port,'0.0.0.0',()=>console.log(`Qique backup entry listening on port ${port}.`));
+  const server=createGateway(upstreamSettings(process.env.QIQUE_UPSTREAM));server.listen(port,'0.0.0.0',()=>console.log(`Qique backup entry listening on port ${port}.`));
   for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>{server.close(()=>process.exit(0));setTimeout(()=>process.exit(0),5000).unref();});
 }

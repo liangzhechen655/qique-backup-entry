@@ -1,6 +1,12 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {createGateway,GAME_ORIGIN} from '../server.mjs';
+import {createGateway,GAME_ORIGIN,RENDER_ORIGIN,upstreamSettings} from '../server.mjs';
+test('deployment and local relay configuration are pinned to owned entries',()=>{
+  assert.equal(upstreamSettings().origin,GAME_ORIGIN);
+  assert.equal(upstreamSettings('render').origin,RENDER_ORIGIN);
+  assert.equal(upstreamSettings('render').timeoutMs,65000);
+  assert.throws(()=>upstreamSettings('https://unrelated.invalid'),/must be/);
+});
 async function withGateway(fn,fetchUpstream){const server=createGateway({fetchUpstream});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));try{await fn(`http://127.0.0.1:${server.address().port}`);}finally{server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}}
 test('forwards game actions once, preserving the seat credential and exact body',async()=>{
   const calls=[];
